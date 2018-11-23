@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Environment mapping with Deep Normals</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #777;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+
+				background-color: #fff;
+
+				margin: 0px;
+				overflow: hidden;
+			}
+			a { color: #00f }
+
+			#info {
+				position: absolute;
+				bottom: 0px; right: 0px; width: 300px;
+				padding: 5px;
+				text-align: left;
+				background-color: #fff;
+			}
+			
+			#resources {
+				display: none;
+			}
+		</style>
+	</head>
+	<body>
+
+		<div id="container"></div>
+
+		<script src="js/three.js"></script>
+		<script src="js/controls/OrbitControls.js"></script>
+
+		<script src="js/loaders/RGBELoader.js"></script>
+		<script src="js/loaders/HDRCubeTextureLoader.js"></script>
+
+		<script src="js/WebGL.js"></script>
+		<script src="js/libs/stats.min.js"></script>
+
+		<script src="js/pmrem/PMREMGenerator.js"></script>
+		<script src="js/pmrem/PMREMCubeUVPacker.js"></script>
+		<script src="js/libs/dat.gui.min.js"></script>
+
+		<script>
+
+			if ( WEBGL.isWebGLAvailable() === false ) {
+				document.body.appendChild( WEBGL.getWebGLErrorMessage() );
+			}
+
+			var params = {
+				illust: 0,
+				roughness: 0.5,
+				metalness: 0.5,
+				normalScale: 1.0,
+				lightX: -200,
+				lightY: 200,
+				lightIntensity: 1.0,
+				lightColor: "#ffa000",
+				envMap: 'SanFrancisco2',
+				envMapIntensity: 2.0,
+				exposure: 1.0,
+				background: "#ffffff"
+			};
+
+			var container, stats;
+			var camera, scene, renderer, controls, rotationObjects = [];
+			var cubeRenderTargets = {};
+			var envMapNames = [ 'SanFrancisco2', 'Lycksele', 'Yokohama', 'pisaLDR', 'pisaHDR', 'white', 'none' ];
+			var envMapUrls = {
+				'SanFrancisco2': genCubeUrls( './images/cube/SanFrancisco2_512/', '.jpg' ),
+				'Lycksele': genCubeUrls( './images/cube/Lycksele_512/', '.jpg' ),
+				'Yokohama': genCubeUrls( './images/cube/Yokohama_512/', '.jpg' ),
+				'pisaLDR': genCubeUrls( './images/cube/pisa/', '.png' ),
+				'pisaHDR': genCubeUrls( './images/cube/pisaHDR/', '.hdr' ),
+				'white': genCubeUrls( './images/cube/white/', '.png' )
+			};
+
+			var illust_dict = {
+				'東北ずん子': 0,
+				'プロ生ちゃん': 1,
+				'江風': 2
+			}
+			var textureUrls = [
+				'images/illust/zunko.png',
+				'images/illust/pronama.png',
+				'images/illust/kawakaze.png'
+			];
+			var normalMapUrls = [
+				'images/illust/zunko_normal.png',
+				'images/illust/pronama_normal.png',
+				'images/illust/kawakaze_normal.png'
+			];
+
+			var illustMaterial;
+			var loader = new THREE.TextureLoader();
+			var textures = [], normalMaps = [];
+			var plane, pointLight;
+
+			init();
+			loadEnvMap();
+			initObjects();
+			initGui();
+			animate();
+
+			function init() {
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 1, 1000 );
+				camera.position.set( 0, 0, 100 );
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xffffff );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.toneMapping = THREE.LinearToneMapping;
+
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				renderer.gammaInput = true;
+				renderer.gammaOutput = true;
+
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				controls.minDistance = 50;
+				controls.maxDistance = 300;
+
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+
+			function initCube( cubeMap, cubeMapName, isHdr ) {
+				if (!isHdr) {
+					cubeMap.encoding = THREE.GammaEncoding;
+				}
+
+				var pmremGenerator = new THREE.PMREMGenerator( cubeMap );
+				pmremGenerator.update( renderer );
+
+				var pmremCubeUVPacker = new THREE.PMREMCubeUVPacker( pmremGenerator.cubeLods );
+				pmremCubeUVPacker.update( renderer );
+
+				cubeRenderTargets[cubeMapName] = pmremCubeUVPacker.CubeUVRenderTarget;
+
+				cubeMap.dispose();
+				pmremGenerator.dispose();
+				pmremCubeUVPacker.dispose();
+			}
+
+			function genCubeUrls( prefix, postfix ) {
+				return [
+					prefix + 'px' + postfix, prefix + 'nx' + postfix,
+					prefix + 'py' + postfix, prefix + 'ny' + postfix,
+					prefix + 'pz' + postfix, prefix + 'nz' + postfix
+				];
+			}
+
+			function initObjects() {
+				for(var illustId = 0; illustId < textureUrls.length; illustId++){
+					var texture = loader.load(textureUrls[illustId]);
+					var normalMap = loader.load(normalMapUrls[illustId]);
+					textures.push(texture);
+					normalMaps.push(normalMap);
+				}				
+					
+				illustMaterial = new THREE.MeshStandardMaterial( {
+					color: 0xffffff,
+					map: textures[params.illust],
+					normalMap: normalMaps[params.illust],
+					metalness: params.metalness,
+					roughness: params.roughness,
+					transparent: true,
+					side: THREE.DoubleSide
+				} );
+
+				var planeGeometry = new THREE.PlaneGeometry(1, 1);
+				plane = new THREE.Mesh(planeGeometry, illustMaterial);
+				scene.add(plane);
+				// rotationObjects.push( plane );
+
+				pointLight = new THREE.PointLight( params.lightColor, 1);
+				pointLight.position.set( 0, 0, 50 );
+				scene.add( pointLight );
+			}
+
+			function initGui() {
+				var gui = new dat.GUI();
+
+				let Folder1, Floder2, Folder3;
+				Folder1 = gui.addFolder('illustMaterial');
+				Folder1.add( params, 'illust', illust_dict ).onChange(
+					function(illust) {
+						illustMaterial.map = textures[illust];
+						illustMaterial.normalMap = normalMaps[illust];
+					});
+				Folder1.add( params, 'roughness', 0, 1 );
+				Folder1.add( params, 'metalness', 0, 1 );
+				Folder1.add( params, 'normalScale', 0, 10 );
+
+				Folder2 = gui.addFolder('light');
+				Folder2.add( params, 'lightX', -500, 500 );
+				Folder2.add( params, 'lightY', -500, 500 );
+				Folder2.add( params, 'lightIntensity', 0, 10 );
+				Folder2.addColor(params, 'lightColor');
+
+				Folder3 = gui.addFolder('misc');
+				Folder3.add( params, 'envMap', envMapNames ).onChange(
+					function() {
+						if (( cubeRenderTargets[params.envMap] !== undefined )
+							  || (params.envMap === 'none')) {
+							changeEnvMap();
+						} else {
+							loadEnvMap();
+						}
+					}
+				);
+				Folder3.add( params, 'envMapIntensity', 0, 10 );
+				Folder3.add( params, 'exposure', 0, 5 );
+				Folder3.addColor(params, 'background');
+
+				gui.open();
+				Folder1.open();
+				Folder2.open();
+				Folder3.open();
+			}
+
+			function loadEnvMap() {
+				if ( params.envMap == 'pisaHDR' ) {
+					new THREE.HDRCubeTextureLoader().load(THREE.UnsignedByteType, envMapUrls[params.envMap],
+						function (cubeMap) {
+							initCube(cubeMap, params.envMap, true);
+							changeEnvMap();
+						}
+					);
+				} else {
+					new THREE.CubeTextureLoader().load(envMapUrls[params.envMap],
+						function (cubeMap) {
+							initCube(cubeMap, params.envMap, false);
+							changeEnvMap();
+						}
+					);
+				}
+			}
+
+			function changeEnvMap() {
+				illustMaterial.envMap = cubeRenderTargets[params.envMap] ? cubeRenderTargets[params.envMap].texture : null;
+				illustMaterial.needsUpdate = true;
+			}
+
+			function onWindowResize() {
+				var width = window.innerWidth;
+				var height = window.innerHeight;
+
+				camera.aspect = width / height;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( width, height );
+			}
+
+			function animate() {
+				requestAnimationFrame( animate );
+
+				stats.begin();
+				render();
+				stats.end();
+			}
+
+			function render() {
+				if ( illustMaterial !== undefined ) {
+					illustMaterial.roughness = params.roughness;
+					illustMaterial.metalness = params.metalness;
+					illustMaterial.normalScale.set( params.normalScale, params.normalScale );
+					illustMaterial.envMapIntensity = params.envMapIntensity;
+				}
+
+				if(textures[params.illust].image !== undefined) {
+					var width = textures[params.illust].image.width;
+					var height = textures[params.illust].image.height;
+					var scaling = 200 / Math.max(width, height)
+					plane.scale.set(width * scaling, height * scaling, 1);
+				}
+
+				scene.background.setHex( params.background.replace('#', '0x') );
+				pointLight.position.x = params.lightX;
+				pointLight.position.y = params.lightY;
+				pointLight.intensity = params.lightIntensity;
+				pointLight.color.setHex( params.lightColor.replace('#', '0x') );
+
+				for (var i = 0, l = rotationObjects.length; i < l; i++) {
+					var object = rotationObjects[ i ];
+					object.rotation.y += 0.005;
+				}
+				renderer.toneMappingExposure = params.exposure;
+				renderer.render( scene, camera );
+			}
+
+		</script>
+
+		<script>
+			var isOpenResources = false;
+			function displayResources() {
+				if (!isOpenResources) {
+					document.getElementById("resources").style.display = "block";
+					isOpenResources = true;
+				} else {
+					document.getElementById("resources").style.display = "none";
+					isOpenResources = false;
+				}
+			}
+		</script>
+
+		<div id="info">
+			<div onclick="displayResources()">Resources</div>
+			<ul id="resources">
+				<li>
+					Normal estimation from line drawings: <a href="https://github.com/V-Sense/DeepNormals" target="_blank" rel="noopener">Deep Normals</a>
+				</li>
+				<li>
+					<a href="https://threejs.org/examples/webgl_materials_envmaps_hdr.html" target="_blank" rel="noopener">three.js example</a> 
+					by Prashant Sharma and <a href="http://clara.io/" target="_blank" rel="noopener">Ben Houston</a>
+				</li>
+				<li>
+					CubeMap textures (SanFrancisco2, Lycksele, Yokohama) by 
+					<a href="http://www.humus.name/index.php?page=Textures" target="_blank" rel="noopener">Emil Persson, aka Humus</a> /CC BY 3.0
+				</li>
+				<li>
+					<a href="https://zunko.jp/con_illust.html" target="_blank" rel="noopener">東北ずん子</a>
+					<a href="https://zunko.jp/guideline.html" target="_blank" rel="noopener">（ガイドライン）</a>
+				</li>
+				<li>
+					<a href="https://kei.pronama.jp/download/" target="_blank" rel="noopener">プロ生ちゃん（暮井 慧）</a>
+					<a href="https://kei.pronama.jp/guideline/" target="_blank" rel="noopener">（ガイドライン）</a>
+				</li>
+				<li>
+					<a href="https://bowlroll.net/file/106876" target="_blank" rel="noopener">cham式江風</a>
+					<a href="https://kimu3.net/20170404/7332" target="_blank" rel="noopener">（艦これガイドライン）</a>
+				</li>
+			</ul>
+		</div>
+
+	</body>
+</html>

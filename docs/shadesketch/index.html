@@ -2,27 +2,47 @@
 <html>
   <head>
     <meta charset="utf-8"/>
-    <!--<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"> </script>-->
-    <script src="./tfjs.js"> </script>
+    <style type="text/css">
+      #langradio input[type="radio"]{
+        display    : none;
+      }
+      #langradio label{
+        display    : inline-block;
+        border     : 1px solid #ccc;
+        box-shadow : 2px 2px #999;
+        padding    : 2px 6px;
+      }
+      #langradio input[type="radio"]:checked + label {
+        background : #e0f0ff;
+      }
+    </style>
   </head>
   <body>
-    <h1>ShadeSketch 線画の自動陰影付け</h1>
+    <h1 class="langCng" lang="ja" style="width: 600px; float: left;">ShadeSketch 線画の自動陰影付け</h1>
+    <h1 class="langCng" lang="en" style="width: 600px; float: left;">ShadeSketch</h1>
+    <div id="langradio" style="float: left;">
+      <input type="radio" name="langKbn" id="sJa" onClick="langSet('ja')" checked>
+      <label for="sJa">日本語</label>
+      <input type="radio" name="langKbn" id="sEn" onClick="langSet('en')">
+      <label for="sEn">English</label>
+    </div>
 
-
-
-<div>
-  <button type = "button" style="width: 160px; height: 50px;" onclick = "loadSampleImage('line_canvas');">
-  サンプル画像読み込み<br>Load sample image
+<div style="clear: both;">
+  <button type = "button" style="width: 160px; height: 30px;" onclick = "loadSampleImage('line_canvas');">
+    <span class="langCng" lang="ja">サンプル画像読み込み</span>
+    <span class="langCng" lang="en">Load sample image</span>
   </button>
-  <input type="file" onChange="loadLocalImage(this.files, 'line_canvas')"></input>
+  <input type="file" onChange="loadLocalImage(this.files, 'line_canvas')">
 </div>
 
 <div>
-  <button type = "button" style="width: 160px; height: 50px;" onclick = "executeShading();">
-  陰影付け<br>Shade image
+  <button type = "button" style="width: 160px; height: 30px;" onclick = "executeShading();">
+    <span class="langCng" lang="ja">陰影付け</span>
+    <span class="langCng" lang="en">Shade image</span>
   </button><br>
 
-  光源位置 Light position
+  <span class="langCng" lang="ja">光源位置</span>
+  <span class="langCng" lang="en">Light position</span>
   <select id="light_direction">
     <option value="110">上　 / 手前</option>
     <option value="210">右上 / 手前</option>
@@ -52,11 +72,12 @@
     <option value="001">逆光</option>
   </select><br>
 
-  最大解像度 Image size limit
+  <span class="langCng" lang="ja">最大解像度</span>
+  <span class="langCng" lang="en">Image size limit</span>
   <select id="max_size">
     <option>128</option>
-    <option selected>256</option>
-    <option>320</option>
+    <option>256</option>
+    <option value="320" selected>320（推奨値/recommended）</option>
     <option>480</option>
     <option>640</option>
     <option>800</option>
@@ -65,7 +86,8 @@
     <option>1600</option>
   </select><br>
 
-  Model size, bit
+  <span class="langCng" lang="ja">モデルサイズ, ビット数</span>
+  <span class="langCng" lang="en">Model size, bit</span>
   <select id="shader_bit" onchange="shouldLoadedModels=true;">
     <option value="8" selected>9MB, 8bit</option>
     <option value="16">18MB, 16bit</option>
@@ -74,25 +96,70 @@
 </div>
 
 <div>
-  <canvas id="line_canvas" width="256" height="256" style="border: 1px solid;"></canvas>
-  <canvas id="overlay_canvas" width="256" height="256" style="border: 1px solid;"></canvas>
-  <canvas id="shade_canvas" width="256" height="256" style="border: 1px solid;"></canvas>
+  <canvas id="line_canvas" width="320" height="320" style="border: 1px solid;"></canvas>
+  <canvas id="overlay_canvas" width="320" height="320" style="border: 1px solid;"></canvas>
+  <canvas id="shade_canvas" width="320" height="320" style="border: 1px solid;"></canvas>
 </div><br>
 
 <div>
-  <a href="https://cal.cs.umbc.edu/Papers/Zheng-2020-Shade/" target="_blank">ShadeSketchプロジェクトページ</a>,
-  <a href="https://github.com/qyzdao/ShadeSketch" target="_blank">github</a><br>
-  ShadeSketch学習済みモデル &copy;Qingyuan Zheng, Zhuoru Li, Adam W. Bargteil
-  (<a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0 license</a>)<br>
-  サンプル画像引用元：
-  <a href="https://github.com/qyzdao/ShadeSketch" target="_blank">ShadeSketch評価画像</a>,
-  <a href="https://www.pixiv.net/artworks/56736941" target="_blank">1</a>,
-  <a href="https://www.pixiv.net/artworks/5895302" target="_blank">2</a>,
-  <a href="https://www.pixiv.net/artworks/56537426" target="_blank">3</a>
+  <p class="langCng" lang="ja" style="float: left; width: 490px; clear: both;">
+    入力線画はサンプル画像に似せた方が綺麗に陰影付けできます。<br>
+    (1) 画像を320x320～512x512ピクセル程度にリサイズ。<br>
+    (2) リサイズ後の線幅が1～6ピクセルになるよう前処理。
+  </p>
+  <p class="langCng" lang="en" style="float: left; width: 490px; clear: both;">
+    For the input image of line drawing, it's better to:<br>
+    (1) resize the image between 320-512 pixels square.<br>
+    (2) make line width between 1-6 pixels after resizing.
+  </p>
+
+  <p class="langCng" lang="ja" style="float: left; width: 480px;">
+    エラー時、3分待っても結果が出ない時の対処法<br>
+    (1) ページを再読み込みし、最大解像度を下げて実行し直す。<br>
+    (2) ブラウザをChrome/Edge/Firefoxに変える。<br>
+    (3) PC・スマホ・GPUのスペックを上げる。
+  </p>
+  <p class="langCng" lang="en" style="float: left; width: 480px;">
+    If problems (error, no result) occur, please try to:<br>
+    (1) reload this page and reduce image size limit.<br>
+    (2) change your browser to Chrome/Edge/Firefox.<br>
+    (3) use a higher-spec PC/smartphone/GPU.
+  </p>
+
+  <p style="float: left; clear: both;">
+    <a href="https://cal.cs.umbc.edu/Papers/Zheng-2020-Shade/" target="_blank">ShadeSketchプロジェクトページ</a>,
+    <a href="https://github.com/qyzdao/ShadeSketch" target="_blank">github</a><br>
+    ShadeSketch学習済みモデル &copy;Qingyuan Zheng, Zhuoru Li, Adam W. Bargteil
+    (<a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0 license</a>)<br>
+    サンプル画像元：
+    <a href="https://github.com/qyzdao/ShadeSketch" target="_blank">ShadeSketch評価画像</a>,
+    <a href="https://www.pixiv.net/artworks/56736941" target="_blank">1</a>,
+    <a href="https://www.pixiv.net/artworks/5895302" target="_blank">2</a>,
+    <a href="https://www.pixiv.net/artworks/56537426" target="_blank">3</a>
+  </p>
 </div>
 
 
 
+    <!--<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"> </script>-->
+    <script src="./tfjs.js"> </script>
     <script src="./shadesketch.js"> </script>
+    <script>
+      window.onload = function() {
+        var wDef = (navigator.browserLanguage || navigator.language || navigator.userLanguage).substr(0,2);
+        langSet(wDef);
+      }
+      function langSet(argLang){
+        var elm = document.getElementsByClassName("langCng");
+        for (var i = 0; i < elm.length; i++) {
+          if(elm[i].getAttribute("lang") == argLang){
+            elm[i].style.display = '';
+          }
+          else{
+            elm[i].style.display = 'none';
+          }
+        }
+      }
+    </script>
   </body>
 </html>

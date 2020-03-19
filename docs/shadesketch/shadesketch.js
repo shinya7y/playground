@@ -56,9 +56,9 @@ function loadSampleImage(canvasName) {
   var sampleImages = [
     "./sample_images/1.png",
     "./sample_images/6.png",
-    "./sample_images/56736941_p1_640.png",
-    "./sample_images/5895302_p0_640.png",
-    "./sample_images/56537426_p0_640.png",
+    "./sample_images/56736941_p1_line.png",
+    "./sample_images/5895302_p0_line.png",
+    "./sample_images/56537426_p0_line.png",
   ];
   chosenImage.src = sampleImages[Math.floor(Math.random() * sampleImages.length)];
   chosenImage.onload = function() {

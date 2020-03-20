@@ -85,9 +85,16 @@ function loadLocalImage(files, canvasName) {
 }
 
 async function executeShading() {
-  const lightDirectionStr = document.getElementById("light_direction").value;
-  const lightPosition = cond_to_pos(lightDirectionStr);
-  console.log("Light Position:", lightDirectionStr, lightPosition);
+  var lightPositionStr = "810"
+  const lpos = document.getElementsByName("lpos");
+  for(let i=0; i<lpos.length; i++) {
+    if(lpos[i].checked){
+      lightPositionStr = lpos[i].value;
+      break;
+    }
+  }
+  const lightPosition = cond_to_pos(lightPositionStr);
+  console.log("Light Position:", lightPositionStr, lightPosition);
 
   const lineCanvas = document.getElementById('line_canvas');
   const lineContext = lineCanvas.getContext('2d');
@@ -106,7 +113,7 @@ async function executeShading() {
   var overlayImageData = overlayContext.createImageData(imageW, imageH)
 
   var grayLineData = new Float32Array(lineImageData.data.length / 4);
-  for (let i=0; i<lineImageData.data.length; i+=4) {
+  for(let i=0; i<lineImageData.data.length; i+=4) {
     grayLineData[i / 4] = (
       lineImageData.data[i + 0] * 0.299 +
       lineImageData.data[i + 1] * 0.587 +

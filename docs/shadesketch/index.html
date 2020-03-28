@@ -12,10 +12,10 @@
     <h1 class="langCng" lang="ja" style="width: 600px;">ShadeSketch 線画の自動陰影付け</h1>
     <h1 class="langCng" lang="en" style="width: 600px;">ShadeSketch</h1>
     <div id="langradio">
-      <input type="radio" name="langKbn" id="sJa" onClick="langSet('ja')" checked>
-      <label for="sJa">日本語</label>
-      <input type="radio" name="langKbn" id="sEn" onClick="langSet('en')">
-      <label for="sEn">English</label>
+      <input type="radio" name="langKbn" id="jaLangRadio" onClick="langSet('ja')">
+      <label for="jaLangRadio">日本語</label>
+      <input type="radio" name="langKbn" id="enLangRadio" onClick="langSet('en')">
+      <label for="enLangRadio">English</label>
     </div>
 </div>
 
@@ -106,9 +106,17 @@
     <option>1600</option>
   </select><br>
 
+  <span class="langCng" lang="ja">バックエンド</span>
+  <span class="langCng" lang="en">Backend</span>
+  <select id="backend_name" onChange="resetBackend();">
+    <option value="auto" selected></option>
+    <option value="webgl">WebGL (high memory usage)</option>
+    <option value="cpu">CPU (slow)</option>
+  </select>
+
   <span class="langCng" lang="ja">モデルサイズ, ビット数</span>
   <span class="langCng" lang="en">Model size, bit</span>
-  <select id="shader_bit" onchange="shouldLoadedModels=true;">
+  <select id="shader_bit">
     <option value="8" selected>9MB, 8bit</option>
     <option value="16">18MB, 16bit</option>
     <option value="32">37MB, 32bit</option>
@@ -136,18 +144,21 @@
   <p class="langCng" lang="ja" style="width: 480px;">
     エラー時、3分待っても結果が出ない時の対処法<br>
     (1) ページを再読み込みし、最大解像度を下げて実行し直す。<br>
-    (2) ブラウザをChrome/Edge/Firefoxに変える。<br>
-    (3) PC・スマホ・GPUのスペックを上げる。
+    (2) バックエンドをCPUに変える。<br>
+    (3) ブラウザをChrome/Edge/Firefoxに変える。<br>
+    (4) PC・スマホ・GPUのスペックを上げる。
   </p>
   <p class="langCng" lang="en" style="width: 480px;">
     If problems (error, no result) occur, please try to:<br>
     (1) reload this page and reduce image size limit.<br>
-    (2) change your browser to Chrome/Edge/Firefox.<br>
-    (3) use a higher-spec PC/smartphone/GPU.
+    (2) change backend to CPU.<br>
+    (3) change your browser to Chrome/Edge/Firefox.<br>
+    (4) use a higher-spec PC/smartphone/GPU.
   </p>
 </div>
-<div>
+<div class="langCng" lang="ja">
   <a href="https://cal.cs.umbc.edu/Papers/Zheng-2020-Shade/" target="_blank">ShadeSketchプロジェクトページ</a>,
+  <a href="https://arxiv.org/abs/2002.11812" target="_blank">論文</a>,
   <a href="https://github.com/qyzdao/ShadeSketch" target="_blank">github</a><br>
   ShadeSketch学習済みモデル &copy;Qingyuan Zheng, Zhuoru Li, Adam W. Bargteil
   (<a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0 license</a>)<br>
@@ -157,10 +168,23 @@
   <a href="https://www.pixiv.net/artworks/5895302" target="_blank">2</a>,
   <a href="https://www.pixiv.net/artworks/56537426" target="_blank">3</a>
 </div>
+<div class="langCng" lang="en">
+  <a href="https://cal.cs.umbc.edu/Papers/Zheng-2020-Shade/" target="_blank">ShadeSketch project site</a>,
+  <a href="https://arxiv.org/abs/2002.11812" target="_blank">paper</a>,
+  <a href="https://github.com/qyzdao/ShadeSketch" target="_blank">github</a><br>
+  ShadeSketch models &copy;Qingyuan Zheng, Zhuoru Li, Adam W. Bargteil
+  (<a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0 license</a>)<br>
+  Sample image sources:
+  <a href="https://github.com/qyzdao/ShadeSketch" target="_blank">ShadeSketch val images</a>,
+  <a href="https://www.pixiv.net/artworks/56736941" target="_blank">1</a>,
+  <a href="https://www.pixiv.net/artworks/5895302" target="_blank">2</a>,
+  <a href="https://www.pixiv.net/artworks/56537426" target="_blank">3</a>
+</div>
 
 
     <!--<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"> </script>-->
     <script src="./tfjs.js"> </script>
+    <!--<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm/dist/tf-backend-wasm.js"> </script>-->
     <script src="./shadesketch.js"> </script>
     <script src="./changelanguage.js"> </script>
   </body>

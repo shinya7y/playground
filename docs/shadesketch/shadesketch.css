@@ -80,4 +80,5 @@ canvas {
 #lposPerson {
   background-image: url("icons/person.svg");
   background-size: 100%;
+  background-repeat: no-repeat;
 }
